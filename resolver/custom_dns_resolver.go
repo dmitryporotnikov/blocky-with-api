@@ -424,7 +424,7 @@ func (r *CustomDNSResolver) UpdateDNSRecord(domain string, records []api.ApiDNSR
 
 	domain = util.ExtractDomainOnly(domain)
 
-	// Remove old entries for this domain
+	// Remove old entries for this domain and clear reverse mappings
 	if oldEntries, found := r.mapping[domain]; found {
 		for _, entry := range oldEntries {
 			if ip := extractIPFromRecord(entry); ip != nil {
@@ -433,6 +433,9 @@ func (r *CustomDNSResolver) UpdateDNSRecord(domain string, records []api.ApiDNSR
 			}
 		}
 	}
+
+	// Clear the domain entry - it will be rebuilt below
+	delete(r.mapping, domain)
 
 	// Add new records
 	for _, rec := range records {
