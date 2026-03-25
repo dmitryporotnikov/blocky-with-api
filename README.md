@@ -87,7 +87,7 @@ Create `/etc/blocky/records.yaml` (can be empty initially):
 records: {}
 ```
 
-### 4. Configure systemd-resolved (Ubuntu/Debian)
+### 4. Configure systemd-resolved (Ubuntu/Debian), create user and update permissions
 
 By default, systemd-resolved reserves port 53. You need to disable it to free port 53 for blocky:
 
@@ -98,6 +98,17 @@ sudo nano /etc/systemd/resolved.conf
 
 # Restart systemd-resolved
 sudo systemctl restart systemd-resolved
+```
+
+```bash
+sudo useradd --system --home /var/lib/blocky --shell /usr/sbin/nologin blocky
+
+sudo mkdir -p /etc/blocky
+sudo mkdir -p /var/lib/blocky
+
+sudo chown -R blocky:blocky /var/lib/blocky
+sudo chown blocky:blocky /etc/blocky/config.yml
+
 ```
 
 ### 5. Create Systemd Service
@@ -266,18 +277,6 @@ records:
       ttl: 3600
 ```
 
----
-
-## Building from Source
-
-```bash
-git clone https://github.com/dmitryporotnikov/blocky-with-api.git
-cd blocky-with-api
-go build -o blocky ./cmd/blocky
-
-# Run
-./blocky serve -c config.yml
-```
 
 ---
 
