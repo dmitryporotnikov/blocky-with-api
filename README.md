@@ -19,6 +19,9 @@ This fork extends the original blocky DNS server with:
 # Install Go (if not present)
 # Ubuntu/Debian: sudo apt install golang-go
 
+# Optional: install net-tools for checking ports
+sudo apt install net-tools
+
 # Clone this repository
 git clone https://github.com/dmitryporotnikov/blocky-with-api.git
 cd blocky-with-api
@@ -84,19 +87,58 @@ Create `/etc/blocky/records.yaml` (can be empty initially):
 records: {}
 ```
 
-### 4. Start the Server
+### 4. Configure systemd-resolved (Ubuntu/Debian)
+
+By default, systemd-resolved reserves port 53. You need to disable it to free port 53 for blocky:
 
 ```bash
-# Run directly
-sudo blocky serve -c /etc/blocky/config.yml
+# Edit systemd-resolved config
+sudo nano /etc/systemd/resolved.conf
+# Add: DNSStubListener=no
 
-# Or run in background with systemd
-sudo nohup blocky serve -c /etc/blocky/config.yml > /var/log/blocky.log 2>&1 &
+# Restart systemd-resolved
+sudo systemctl restart systemd-resolved
 ```
 
-### 5. Verify it's working
+### 5. Create Systemd Service
+
+Create `/etc/systemd/system/blocky.service`:
+
+```ini
+[Unit]
+Description=Blocky DNS with API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blocky
+Group=blocky
+ExecStart=/usr/local/bin/blocky serve -c /etc/blocky/config.yml
+Restart=on-failure
+RestartSec=5
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
 
 ```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now blocky
+```
+
+### 6. Verify it's working
+
+```bash
+# Check service status
+sudo systemctl status blocky
+
+# View logs
+journalctl -u blocky -f
+
 # Check DNS resolution
 dig @127.0.0.1 google.com
 
