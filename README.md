@@ -38,46 +38,37 @@ sudo mv blocky /usr/local/bin/
 Create `/etc/blocky/config.yml`:
 
 ```yaml
-cat /opt/blocky/config.yml
 # configuration documentation: https://0xerr0r.github.io/blocky/latest/configuration/
+
+# HTTP API port - THIS IS REQUIRED FOR REST API
+ports:
+  dns: 53               # DNS port (UDP/TCP)
+  http: 4000            # REST API port
 
 upstreams:
   groups:
     # these external DNS resolvers will be used. Blocky picks 2 random resolvers from the list for each query
-    # format for resolver: [net:]host:[port][/path]. net could be empty (default, shortcut for tcp+udp), tcp+udp, tcp, udp, tcp-tls or https (DoH). If port is empty, default port will be used (53 for udp and tcp, 853 for tcp-tls, 443 for https (Doh))
-    # this configuration is mandatory, please define at least one external DNS resolver
     default:
-      # Adguard1
-      - 45.90.28.169
-      # Adguard2
-      - 45.90.30.169
+      - 45.90.28.169   # Adguard1
+      - 45.90.30.169   # Adguard2
+
+# Enable custom DNS with dynamic file persistence
+customDNS:
+  customTTL: 1h
+  dynamicFile: /etc/blocky/records.yaml
+  filterUnmappedTypes: true
 
 # optional: use allow/denylists to block queries (for example ads, trackers, adult pages etc.)
 blocking:
-  # definition of denylist groups. Can be external link (http/https) or local file
   denylists:
     ads:
   #    - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
-  # definition: which groups should be applied for which client
   clientGroupsBlock:
-    # default will be used, if no special definition for a client name exists
     default:
       - ads
 
-# optional: write query information (question, answer, client, duration etc.) to daily csv file
-queryLog:
-  # optional one of: mysql, postgresql, csv, csv-client. If empty, log to console
-  type:
-
-# optional: use these DNS servers to resolve denylist urls and upstream DNS servers. It is useful if no system DNS resolver is configured, and/or to encrypt the bootstrap queries.
-bootstrapDns:
-  - upstream: tcp-tls:one.one.one.one
-    ips:
-      - 1.1.1.1
-
 # optional: logging configuration
 log:
-  # optional: Log level (one from trace, debug, info, warn, error). Default: info
   level: info
 ```
 
