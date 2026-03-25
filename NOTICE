@@ -1,0 +1,13 @@
+Blocky DNS Server with REST API Extensions
+
+Copyright 2024 Dmitry Porotnikov
+
+This product includes software developed by
+0xERR0R (https://github.com/0xERR0R/blocky)
+
+Modifications:
+- Added REST API endpoints for dynamic DNS record management (GET/POST/PUT/DELETE /api/dns/records)
+- Added file-based persistence for dynamic DNS records
+
+This product is a derivative work of the blocky DNS proxy and ad-blocker project.
+See https://github.com/0xERR0R/blocky for the original project.

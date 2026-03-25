@@ -13,16 +13,23 @@ This fork extends the original blocky DNS server with:
 
 ## Quick Start on Linux
 
-### 1. Download the Binary
+### 1. Build from Source
 
 ```bash
-# Download the latest release for Linux amd64
-curl -L -o blocky https://github.com/0xERR0R/blocky/releases/latest/download/blocky_linux_amd64
+# Install Go (if not present)
+# Ubuntu/Debian: sudo apt install golang-go
 
-# Make it executable
+# Clone this repository
+git clone https://github.com/dmitryporotnikov/blocky-with-api.git
+cd blocky-with-api
+
+# Build
+go build -o blocky ./cmd/blocky
+
+# Make executable
 chmod +x blocky
 
-# Move to your PATH
+# Move to your PATH (optional)
 sudo mv blocky /usr/local/bin/
 ```
 
@@ -172,9 +179,8 @@ records:
 ## Building from Source
 
 ```bash
-# Clone and build
-git clone https://github.com/0xERR0R/blocky.git
-cd blocky
+git clone https://github.com/dmitryporotnikov/blocky-with-api.git
+cd blocky-with-api
 go build -o blocky ./cmd/blocky
 
 # Run
