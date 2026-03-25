@@ -371,6 +371,9 @@ components:
     api.DNSRecordRequest:
       type: object
       properties:
+        domain:
+          type: string
+          description: Domain name (e.g., example.com)
         type:
           type: string
           description: Record type (A, AAAA, TXT, CNAME, SRV, PTR)
@@ -384,6 +387,7 @@ components:
           minimum: 0
           default: 3600
       required:
+        - domain
         - type
         - value
     api.DNSRecordsResponse:

@@ -217,12 +217,16 @@ func (i *OpenAPIInterfaceImpl) AddDnsRecord(_ context.Context,
 		return AddDnsRecord400TextResponse("request body is required"), nil
 	}
 
+	if request.Body.Domain == "" {
+		return AddDnsRecord400TextResponse("domain is required"), nil
+	}
+
 	var ttl uint32
 	if request.Body.Ttl != nil {
 		ttl = uint32(*request.Body.Ttl)
 	}
 
-	err := i.customDNS.AddDNSRecord("", string(request.Body.Type), request.Body.Value, ttl)
+	err := i.customDNS.AddDNSRecord(request.Body.Domain, string(request.Body.Type), request.Body.Value, ttl)
 	if err != nil {
 		return AddDnsRecord400TextResponse(log.EscapeInput(err.Error())), nil
 	}

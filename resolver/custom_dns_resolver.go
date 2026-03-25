@@ -68,6 +68,7 @@ func NewCustomDNSResolver(cfg config.CustomDNS) *CustomDNSResolver {
 		log.Log().WithError(err).Error("failed to load dynamic DNS records")
 	} else if dynamicRecords != nil {
 		for url, entries := range dynamicRecords {
+			url = util.ExtractDomainOnly(url) // Normalize domain (remove trailing dot)
 			if _, exists := dnsRecords[url]; !exists {
 				dnsRecords[url] = entries
 			} else {
@@ -341,7 +342,7 @@ func (r *CustomDNSResolver) AddDNSRecord(domain string, recType string, value st
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	domain = dns.Fqdn(domain)
+	domain = util.ExtractDomainOnly(domain)
 	if ttl == 0 {
 		ttl = r.cfg.CustomTTL.SecondsU32()
 	}
@@ -369,7 +370,7 @@ func (r *CustomDNSResolver) RemoveDNSRecord(domain string, recType string) error
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	domain = dns.Fqdn(domain)
+	domain = util.ExtractDomainOnly(domain)
 
 	entries, found := r.mapping[domain]
 	if !found {
@@ -418,7 +419,7 @@ func (r *CustomDNSResolver) UpdateDNSRecord(domain string, records []api.ApiDNSR
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	domain = dns.Fqdn(domain)
+	domain = util.ExtractDomainOnly(domain)
 
 	// Remove old entries for this domain
 	if oldEntries, found := r.mapping[domain]; found {
@@ -505,7 +506,7 @@ func (r *CustomDNSResolver) DeleteDNSRecord(domain string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	domain = dns.Fqdn(domain)
+	domain = util.ExtractDomainOnly(domain)
 
 	entries, found := r.mapping[domain]
 	if !found {

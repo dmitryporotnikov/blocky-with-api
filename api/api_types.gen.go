@@ -42,6 +42,9 @@ type ApiDNSRecord struct {
 
 // ApiDNSRecordRequest defines model for api.DNSRecordRequest.
 type ApiDNSRecordRequest struct {
+	// Domain Domain name (e.g., example.com)
+	Domain string `json:"domain"`
+
 	// Ttl TTL in seconds (default: 3600)
 	Ttl *int `json:"ttl,omitempty"`
 
