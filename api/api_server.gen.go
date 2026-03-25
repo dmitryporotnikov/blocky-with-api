@@ -28,6 +28,18 @@ type ServerInterface interface {
 	// Clears the DNS response cache
 	// (POST /cache/flush)
 	CacheFlush(w http.ResponseWriter, r *http.Request)
+	// List all custom DNS records
+	// (GET /dns/records)
+	GetDnsRecords(w http.ResponseWriter, r *http.Request)
+	// Add a DNS record
+	// (POST /dns/records)
+	AddDnsRecord(w http.ResponseWriter, r *http.Request)
+	// Delete DNS records for a domain
+	// (DELETE /dns/records/{domain})
+	DeleteDnsRecord(w http.ResponseWriter, r *http.Request, domain string)
+	// Update DNS records for a domain
+	// (PUT /dns/records/{domain})
+	UpdateDnsRecord(w http.ResponseWriter, r *http.Request, domain string)
 	// List refresh
 	// (POST /lists/refresh)
 	ListRefresh(w http.ResponseWriter, r *http.Request)
@@ -61,6 +73,30 @@ func (_ Unimplemented) BlockingStatus(w http.ResponseWriter, r *http.Request) {
 // Clears the DNS response cache
 // (POST /cache/flush)
 func (_ Unimplemented) CacheFlush(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List all custom DNS records
+// (GET /dns/records)
+func (_ Unimplemented) GetDnsRecords(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add a DNS record
+// (POST /dns/records)
+func (_ Unimplemented) AddDnsRecord(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete DNS records for a domain
+// (DELETE /dns/records/{domain})
+func (_ Unimplemented) DeleteDnsRecord(w http.ResponseWriter, r *http.Request, domain string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update DNS records for a domain
+// (PUT /dns/records/{domain})
+func (_ Unimplemented) UpdateDnsRecord(w http.ResponseWriter, r *http.Request, domain string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -153,6 +189,84 @@ func (siw *ServerInterfaceWrapper) CacheFlush(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CacheFlush(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDnsRecords operation middleware
+func (siw *ServerInterfaceWrapper) GetDnsRecords(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDnsRecords(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddDnsRecord operation middleware
+func (siw *ServerInterfaceWrapper) AddDnsRecord(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDnsRecord(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteDnsRecord operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDnsRecord(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "domain" -------------
+	var domain string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", chi.URLParam(r, "domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDnsRecord(w, r, domain)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDnsRecord operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDnsRecord(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "domain" -------------
+	var domain string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", chi.URLParam(r, "domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDnsRecord(w, r, domain)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -316,6 +430,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/cache/flush", wrapper.CacheFlush)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dns/records", wrapper.GetDnsRecords)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/dns/records", wrapper.AddDnsRecord)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/dns/records/{domain}", wrapper.DeleteDnsRecord)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/dns/records/{domain}", wrapper.UpdateDnsRecord)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/lists/refresh", wrapper.ListRefresh)
 	})
 	r.Group(func(r chi.Router) {
@@ -397,6 +523,121 @@ func (response CacheFlush200Response) VisitCacheFlushResponse(w http.ResponseWri
 	return nil
 }
 
+type GetDnsRecordsRequestObject struct {
+}
+
+type GetDnsRecordsResponseObject interface {
+	VisitGetDnsRecordsResponse(w http.ResponseWriter) error
+}
+
+type GetDnsRecords200JSONResponse ApiDNSRecordsResponse
+
+func (response GetDnsRecords200JSONResponse) VisitGetDnsRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDnsRecords500TextResponse string
+
+func (response GetDnsRecords500TextResponse) VisitGetDnsRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(500)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
+type AddDnsRecordRequestObject struct {
+	Body *AddDnsRecordJSONRequestBody
+}
+
+type AddDnsRecordResponseObject interface {
+	VisitAddDnsRecordResponse(w http.ResponseWriter) error
+}
+
+type AddDnsRecord200Response struct {
+}
+
+func (response AddDnsRecord200Response) VisitAddDnsRecordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(200)
+	return nil
+}
+
+type AddDnsRecord400TextResponse string
+
+func (response AddDnsRecord400TextResponse) VisitAddDnsRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(400)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
+type DeleteDnsRecordRequestObject struct {
+	Domain string `json:"domain"`
+}
+
+type DeleteDnsRecordResponseObject interface {
+	VisitDeleteDnsRecordResponse(w http.ResponseWriter) error
+}
+
+type DeleteDnsRecord200Response struct {
+}
+
+func (response DeleteDnsRecord200Response) VisitDeleteDnsRecordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(200)
+	return nil
+}
+
+type DeleteDnsRecord404TextResponse string
+
+func (response DeleteDnsRecord404TextResponse) VisitDeleteDnsRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(404)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
+type UpdateDnsRecordRequestObject struct {
+	Domain string `json:"domain"`
+	Body   *UpdateDnsRecordJSONRequestBody
+}
+
+type UpdateDnsRecordResponseObject interface {
+	VisitUpdateDnsRecordResponse(w http.ResponseWriter) error
+}
+
+type UpdateDnsRecord200Response struct {
+}
+
+func (response UpdateDnsRecord200Response) VisitUpdateDnsRecordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(200)
+	return nil
+}
+
+type UpdateDnsRecord400TextResponse string
+
+func (response UpdateDnsRecord400TextResponse) VisitUpdateDnsRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(400)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
+type UpdateDnsRecord404TextResponse string
+
+func (response UpdateDnsRecord404TextResponse) VisitUpdateDnsRecordResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(404)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
 type ListRefreshRequestObject struct {
 }
 
@@ -463,6 +704,18 @@ type StrictServerInterface interface {
 	// Clears the DNS response cache
 	// (POST /cache/flush)
 	CacheFlush(ctx context.Context, request CacheFlushRequestObject) (CacheFlushResponseObject, error)
+	// List all custom DNS records
+	// (GET /dns/records)
+	GetDnsRecords(ctx context.Context, request GetDnsRecordsRequestObject) (GetDnsRecordsResponseObject, error)
+	// Add a DNS record
+	// (POST /dns/records)
+	AddDnsRecord(ctx context.Context, request AddDnsRecordRequestObject) (AddDnsRecordResponseObject, error)
+	// Delete DNS records for a domain
+	// (DELETE /dns/records/{domain})
+	DeleteDnsRecord(ctx context.Context, request DeleteDnsRecordRequestObject) (DeleteDnsRecordResponseObject, error)
+	// Update DNS records for a domain
+	// (PUT /dns/records/{domain})
+	UpdateDnsRecord(ctx context.Context, request UpdateDnsRecordRequestObject) (UpdateDnsRecordResponseObject, error)
 	// List refresh
 	// (POST /lists/refresh)
 	ListRefresh(ctx context.Context, request ListRefreshRequestObject) (ListRefreshResponseObject, error)
@@ -591,6 +844,120 @@ func (sh *strictHandler) CacheFlush(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CacheFlushResponseObject); ok {
 		if err := validResponse.VisitCacheFlushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDnsRecords operation middleware
+func (sh *strictHandler) GetDnsRecords(w http.ResponseWriter, r *http.Request) {
+	var request GetDnsRecordsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDnsRecords(ctx, request.(GetDnsRecordsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDnsRecords")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDnsRecordsResponseObject); ok {
+		if err := validResponse.VisitGetDnsRecordsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddDnsRecord operation middleware
+func (sh *strictHandler) AddDnsRecord(w http.ResponseWriter, r *http.Request) {
+	var request AddDnsRecordRequestObject
+
+	var body AddDnsRecordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddDnsRecord(ctx, request.(AddDnsRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddDnsRecord")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddDnsRecordResponseObject); ok {
+		if err := validResponse.VisitAddDnsRecordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDnsRecord operation middleware
+func (sh *strictHandler) DeleteDnsRecord(w http.ResponseWriter, r *http.Request, domain string) {
+	var request DeleteDnsRecordRequestObject
+
+	request.Domain = domain
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDnsRecord(ctx, request.(DeleteDnsRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDnsRecord")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteDnsRecordResponseObject); ok {
+		if err := validResponse.VisitDeleteDnsRecordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDnsRecord operation middleware
+func (sh *strictHandler) UpdateDnsRecord(w http.ResponseWriter, r *http.Request, domain string) {
+	var request UpdateDnsRecordRequestObject
+
+	request.Domain = domain
+
+	var body UpdateDnsRecordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDnsRecord(ctx, request.(UpdateDnsRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDnsRecord")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDnsRecordResponseObject); ok {
+		if err := validResponse.VisitUpdateDnsRecordResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

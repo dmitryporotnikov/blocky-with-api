@@ -191,6 +191,111 @@ paths:
       responses:
         '200':
           description: All caches cleared
+  /dns/records:
+    get:
+      operationId: getDnsRecords
+      tags:
+        - dns
+      summary: List all custom DNS records
+      description: Returns all custom DNS records
+      responses:
+        '200':
+          description: DNS records returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/api.DNSRecordsResponse'
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Error text
+    post:
+      operationId: addDnsRecord
+      tags:
+        - dns
+      summary: Add a DNS record
+      description: Add a new custom DNS record
+      requestBody:
+        description: DNS record data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.DNSRecordRequest'
+        required: true
+      responses:
+        '200':
+          description: DNS record added
+        '400':
+          description: Bad request (invalid record format)
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Bad request
+  /dns/records/{domain}:
+    put:
+      operationId: updateDnsRecord
+      tags:
+        - dns
+      summary: Update DNS records for a domain
+      description: Update (replace) all DNS records for a specific domain
+      parameters:
+        - name: domain
+          in: path
+          description: Domain name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: DNS record data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/api.DNSRecordRequest'
+        required: true
+      responses:
+        '200':
+          description: DNS record updated
+        '400':
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Bad request
+        '404':
+          description: Domain not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Domain not found
+    delete:
+      operationId: deleteDnsRecord
+      tags:
+        - dns
+      summary: Delete DNS records for a domain
+      description: Remove all DNS records for a specific domain
+      parameters:
+        - name: domain
+          in: path
+          description: Domain name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: DNS record deleted
+        '404':
+          description: Domain not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Domain not found
 components:
   schemas:
     api.BlockingStatus:
@@ -244,3 +349,48 @@ components:
         - response
         - responseType
         - returnCode
+    api.DNSRecord:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Domain name
+        type:
+          type: string
+          description: Record type (A, AAAA, TXT, CNAME, SRV, PTR)
+        value:
+          type: string
+          description: Record value (IP address, hostname, text, etc.)
+        ttl:
+          type: integer
+          description: TTL in seconds
+      required:
+        - domain
+        - type
+        - value
+    api.DNSRecordRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Record type (A, AAAA, TXT, CNAME, SRV, PTR)
+          enum: [A, AAAA, TXT, CNAME, SRV, PTR]
+        value:
+          type: string
+          description: Record value (IP address, hostname, text, etc.)
+        ttl:
+          type: integer
+          description: 'TTL in seconds (default: 3600)'
+          minimum: 0
+          default: 3600
+      required:
+        - type
+        - value
+    api.DNSRecordsResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          description: List of DNS records
+          items:
+            $ref: '#/components/schemas/api.DNSRecord'

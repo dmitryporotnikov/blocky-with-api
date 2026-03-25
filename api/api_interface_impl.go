@@ -53,6 +53,15 @@ type CacheControl interface {
 	FlushCaches(ctx context.Context)
 }
 
+// CustomDNSControl interface to manage custom DNS records
+type CustomDNSControl interface {
+	AddDNSRecord(domain string, recType string, value string, ttl uint32) error
+	RemoveDNSRecord(domain string, recType string) error
+	UpdateDNSRecord(domain string, records []ApiDNSRecord) error
+	DeleteDNSRecord(domain string) error
+	GetDNSRecords() []ApiDNSRecord
+}
+
 func RegisterOpenAPIEndpoints(router chi.Router, impl StrictServerInterface) {
 	middleware := []StrictMiddlewareFunc{ctxWithHTTPRequestMiddleware}
 
@@ -72,18 +81,21 @@ type OpenAPIInterfaceImpl struct {
 	querier      Querier
 	refresher    ListRefresher
 	cacheControl CacheControl
+	customDNS    CustomDNSControl
 }
 
 func NewOpenAPIInterfaceImpl(control BlockingControl,
 	querier Querier,
 	refresher ListRefresher,
 	cacheControl CacheControl,
+	customDNS CustomDNSControl,
 ) *OpenAPIInterfaceImpl {
 	return &OpenAPIInterfaceImpl{
 		control:      control,
 		querier:      querier,
 		refresher:    refresher,
 		cacheControl: cacheControl,
+		customDNS:    customDNS,
 	}
 }
 
@@ -188,4 +200,74 @@ func (i *OpenAPIInterfaceImpl) CacheFlush(ctx context.Context,
 	i.cacheControl.FlushCaches(ctx)
 
 	return CacheFlush200Response{}, nil
+}
+
+func (i *OpenAPIInterfaceImpl) GetDnsRecords(_ context.Context,
+	_ GetDnsRecordsRequestObject,
+) (GetDnsRecordsResponseObject, error) {
+	records := i.customDNS.GetDNSRecords()
+
+	return GetDnsRecords200JSONResponse{Records: &records}, nil
+}
+
+func (i *OpenAPIInterfaceImpl) AddDnsRecord(_ context.Context,
+	request AddDnsRecordRequestObject,
+) (AddDnsRecordResponseObject, error) {
+	if request.Body == nil {
+		return AddDnsRecord400TextResponse("request body is required"), nil
+	}
+
+	var ttl uint32
+	if request.Body.Ttl != nil {
+		ttl = uint32(*request.Body.Ttl)
+	}
+
+	err := i.customDNS.AddDNSRecord("", string(request.Body.Type), request.Body.Value, ttl)
+	if err != nil {
+		return AddDnsRecord400TextResponse(log.EscapeInput(err.Error())), nil
+	}
+
+	return AddDnsRecord200Response{}, nil
+}
+
+func (i *OpenAPIInterfaceImpl) DeleteDnsRecord(_ context.Context,
+	request DeleteDnsRecordRequestObject,
+) (DeleteDnsRecordResponseObject, error) {
+	err := i.customDNS.DeleteDNSRecord(request.Domain)
+	if err != nil {
+		return DeleteDnsRecord404TextResponse(log.EscapeInput(err.Error())), nil
+	}
+
+	return DeleteDnsRecord200Response{}, nil
+}
+
+func (i *OpenAPIInterfaceImpl) UpdateDnsRecord(_ context.Context,
+	request UpdateDnsRecordRequestObject,
+) (UpdateDnsRecordResponseObject, error) {
+	if request.Body == nil {
+		return UpdateDnsRecord400TextResponse("request body is required"), nil
+	}
+
+	var ttl uint32
+	if request.Body.Ttl != nil {
+		ttl = uint32(*request.Body.Ttl)
+	}
+
+	records := []ApiDNSRecord{
+		{
+			Type:  string(request.Body.Type),
+			Value: request.Body.Value,
+		},
+	}
+	if ttl > 0 {
+		ttlInt := int(ttl)
+		records[0].Ttl = &ttlInt
+	}
+
+	err := i.customDNS.UpdateDNSRecord(request.Domain, records)
+	if err != nil {
+		return UpdateDnsRecord400TextResponse(log.EscapeInput(err.Error())), nil
+	}
+
+	return UpdateDnsRecord200Response{}, nil
 }

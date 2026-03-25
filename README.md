@@ -1,95 +1,194 @@
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/0xERR0R/blocky/makefile.yml "Make")](https://github.com/0xERR0R/blocky/actions/workflows/makefile.yml)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/0xERR0R/blocky/release.yml "Release")](https://github.com/0xERR0R/blocky/actions/workflows/release.yml)
-[![GitHub latest version](https://img.shields.io/github/v/release/0xERR0R/blocky "Latest version")](https://github.com/0xERR0R/blocky/releases)
-[![GitHub Release Date](https://img.shields.io/github/release-date/0xERR0R/blocky "Latest release date")](https://github.com/0xERR0R/blocky/releases)
-[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/0xERR0R/blocky "Go version")](#)
-[![Docker pulls](https://img.shields.io/docker/pulls/spx01/blocky "Latest version")](https://hub.docker.com/r/spx01/blocky)
-[![Docker Image Size (latest)](https://img.shields.io/docker/image-size/spx01/blocky/latest)](https://hub.docker.com/r/spx01/blocky)
-[![Codecov](https://img.shields.io/codecov/c/gh/0xERR0R/blocky "Code coverage")](https://codecov.io/gh/0xERR0R/blocky)
-[![Codacy grade](https://img.shields.io/codacy/grade/8fcd8f8420b8419c808c47af58ed9282 "Codacy grade")](#)
-[![Go Report Card](https://goreportcard.com/badge/github.com/0xERR0R/blocky)](https://goreportcard.com/report/github.com/0xERR0R/blocky)
-[![Donation](https://img.shields.io/badge/buy%20me%20a%20coffee-donate-blueviolet.svg)](https://ko-fi.com/0xerr0r)
+# Blocky DNS Server (Fork)
 
-<p align="center">
-  <img height="200" src="https://github.com/0xERR0R/blocky/blob/main/docs/blocky.svg">
-</p>
+> **This is a fork of [0xERR0R/blocky](https://github.com/0xERR0R/blocky)** with additional REST API support for dynamic DNS record management.
 
-# Blocky
+## Fork Features
 
-Blocky is a DNS proxy and ad-blocker for the local network written in Go with following features:
+This fork extends the original blocky DNS server with:
 
-## Features
+- **Dynamic DNS Record Management via REST API** - Create, update, delete DNS records at runtime without restarting the server
+- **File-based Persistence** - Dynamic records are saved to a YAML file and persist across restarts
 
-- **Blocking** - Blocking of DNS queries with external lists (Ad-block, malware) and allowlisting
+---
 
-  - Definition of allow/denylists per client group (Kids, Smart home devices, etc.)
-  - Periodical reload of external allow/denylists
-  - Regex support
-  - Blocking of request domain, response CNAME (deep CNAME inspection) and response IP addresses (against IP lists)
+## Quick Start on Linux
 
-- **Advanced DNS configuration** - not just an ad-blocker
+### 1. Download the Binary
 
-  - Custom DNS resolution for certain domain names
-  - Conditional forwarding to external DNS server
-  - Upstream resolvers can be defined per client group
+```bash
+# Download the latest release for Linux amd64
+curl -L -o blocky https://github.com/0xERR0R/blocky/releases/latest/download/blocky_linux_amd64
 
-- **Performance** - Improves speed and performance in your network
+# Make it executable
+chmod +x blocky
 
-  - Customizable caching of DNS answers for queries -> improves DNS resolution speed and reduces amount of external DNS
-    queries
-  - Prefetching and caching of often used queries
-  - Using multiple external resolver simultaneously
-  - Low memory footprint
+# Move to your PATH
+sudo mv blocky /usr/local/bin/
+```
 
-- **Various Protocols** - Supports modern DNS protocols
+### 2. Create a Configuration File
 
-  - DNS over UDP and TCP
-  - DNS over HTTPS (aka DoH)
-  - DNS over TLS (aka DoT)
+Create `/etc/blocky/config.yml`:
 
-- **Security and Privacy** - Secure communication
+```yaml
+# Minimal configuration with REST API enabled
+ports:
+  dns: 53
+  http: 4000
 
-  - Supports modern DNS extensions: DNSSEC, eDNS, ...
-  - DNSSEC validation of upstream resolvers
-  - Free configurable blocking lists - no hidden filtering etc.
-  - Provides DoH Endpoint
-  - Uses random upstream resolvers from the configuration - increases your privacy through the distribution of your DNS
-    traffic over multiple provider
-  - Blocky does **NOT** collect any user data, telemetry, statistics etc.
+upstream:
+  upstreamResolvers:
+    - 8.8.8.8
+    - 8.8.4.4
 
-- **Integration** - various integration
+customDNS:
+  customTTL: 1h
+  dynamicFile: /etc/blocky/records.yaml
+  filterUnmappedTypes: true
 
-  - [Prometheus](https://prometheus.io/) metrics
-  - Prepared [Grafana](https://grafana.com/) dashboards (Prometheus and database)
-  - Logging of DNS queries per day / per client in CSV format or MySQL/MariaDB/PostgreSQL/Timescale database - easy to
-    analyze
-  - Various REST API endpoints
-  - CLI tool
+logLevel: info
+```
 
-- **Simple configuration** - single or multiple configuration files in YAML format
+### 3. Create the Dynamic Records File
 
-  - Simple to maintain
-  - Simple to backup
+Create `/etc/blocky/records.yaml` (can be empty initially):
 
-- **Simple installation/configuration** - blocky was designed for simple installation
+```yaml
+records: {}
+```
 
-  - Stateless (no database, no temporary files)
-  - Docker image with Multi-arch support
-  - Single binary
-  - Supports x86-64 and ARM architectures -> runs fine on Raspberry PI
-  - Community supported Helm chart for k8s deployment
+### 4. Start the Server
 
-## Quick start
+```bash
+# Run directly
+sudo blocky serve -c /etc/blocky/config.yml
 
-You can jump to [Installation](https://0xerr0r.github.io/blocky/latest/installation/) chapter in the documentation.
+# Or run in background with systemd
+sudo nohup blocky serve -c /etc/blocky/config.yml > /var/log/blocky.log 2>&1 &
+```
 
-## Full documentation
+### 5. Verify It's Working
 
-You can find full documentation and configuration examples
-at: [https://0xERR0R.github.io/blocky/](https://0xERR0R.github.io/blocky/)
+```bash
+# Check DNS resolution
+dig @127.0.0.1 google.com
 
-## Contribution
+# Check API is responding
+curl http://127.0.0.1:4000/api/blocking/status
+```
 
-Issues, feature suggestions and pull requests are welcome!
+---
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G25XZQG)
+## REST API - Dynamic DNS Record Management
+
+The fork adds endpoints to dynamically manage DNS records at runtime.
+
+### Base URL
+```
+http://localhost:4000/api
+```
+
+### Endpoints
+
+#### List All DNS Records
+```bash
+curl http://localhost:4000/api/dns/records
+```
+
+Response:
+```json
+{
+  "records": [
+    {"domain": "myserver.local.", "type": "A", "value": "192.168.1.100", "ttl": 3600}
+  ]
+}
+```
+
+#### Add a DNS Record
+```bash
+curl -X POST http://localhost:4000/api/dns/records \
+  -H "Content-Type: application/json" \
+  -d '{"type":"A","value":"192.168.1.100","ttl":3600}'
+```
+
+Supported record types: `A`, `AAAA`, `TXT`, `CNAME`, `SRV`, `PTR`
+
+#### Update DNS Records for a Domain
+```bash
+curl -X PUT "http://localhost:4000/api/dns/records/myserver.local." \
+  -H "Content-Type: application/json" \
+  -d '{"type":"A","value":"192.168.1.200","ttl":7200}'
+```
+
+#### Delete All Records for a Domain
+```bash
+curl -X DELETE "http://localhost:4000/api/dns/records/myserver.local."
+```
+
+### Other Existing API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/blocking/status` | Get blocking status |
+| GET | `/api/blocking/disable?duration=5m` | Disable blocking for duration |
+| GET | `/api/blocking/enable` | Enable blocking |
+| POST | `/api/lists/refresh` | Refresh allow/denylists |
+| POST | `/api/cache/flush` | Clear DNS cache |
+| POST | `/api/query` | Perform DNS query |
+
+---
+
+## Configuration Reference
+
+### Custom DNS with Dynamic File
+
+```yaml
+customDNS:
+  customTTL: 1h                    # Default TTL for records
+  dynamicFile: /path/to/records.yaml  # File for dynamic records
+  filterUnmappedTypes: true         # Only return matching record types
+  mapping:                         # Static mappings (optional)
+    "example.com.":
+      - "1.2.3.4"
+```
+
+### Dynamic Records File Format
+
+The dynamic records file (`records.yaml`) uses this format:
+
+```yaml
+records:
+  "myserver.local.":
+    - type: A
+      value: 192.168.1.100
+      ttl: 3600
+    - type: TXT
+      value: "my text record"
+      ttl: 3600
+```
+
+---
+
+## Building from Source
+
+```bash
+# Clone and build
+git clone https://github.com/0xERR0R/blocky.git
+cd blocky
+go build -o blocky ./cmd/blocky
+
+# Run
+./blocky serve -c config.yml
+```
+
+---
+
+## Original Blocky Documentation
+
+For complete blocky documentation including installation, configuration examples, and advanced features, see the [original project documentation](https://0xerr0r.github.io/blocky/).
+
+---
+
+## License
+
+Apache 2.0 - See [original blocky license](https://github.com/0xERR0R/blocky/blob/main/LICENSE)

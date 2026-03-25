@@ -50,7 +50,12 @@ func (s *Server) createOpenAPIInterfaceImpl() (impl api.StrictServerInterface, e
 		return nil, fmt.Errorf("no cache API implementation found %w", err)
 	}
 
-	return api.NewOpenAPIInterfaceImpl(bControl, s, refresher, cacheControl), nil
+	customDNS, err := resolver.GetFromChainWithType[api.CustomDNSControl](s.queryResolver)
+	if err != nil {
+		return nil, fmt.Errorf("no custom DNS API implementation found %w", err)
+	}
+
+	return api.NewOpenAPIInterfaceImpl(bControl, s, refresher, cacheControl, customDNS), nil
 }
 
 func (s *Server) registerDoHEndpoints(router *chi.Mux, cfg *config.Config) {
