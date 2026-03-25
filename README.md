@@ -131,21 +131,21 @@ Response:
 ```bash
 curl -X POST http://localhost:4000/api/dns/records \
   -H "Content-Type: application/json" \
-  -d '{"type":"A","value":"192.168.1.100","ttl":3600}'
+  -d '{"domain":"myserver.local","type":"A","value":"192.168.1.100","ttl":3600}'
 ```
 
 Supported record types: `A`, `AAAA`, `TXT`, `CNAME`, `SRV`, `PTR`
 
 #### Update DNS Records for a Domain
 ```bash
-curl -X PUT "http://localhost:4000/api/dns/records/myserver.local." \
+curl -X PUT "http://localhost:4000/api/dns/records/myserver.local" \
   -H "Content-Type: application/json" \
   -d '{"type":"A","value":"192.168.1.200","ttl":7200}'
 ```
 
 #### Delete All Records for a Domain
 ```bash
-curl -X DELETE "http://localhost:4000/api/dns/records/myserver.local."
+curl -X DELETE "http://localhost:4000/api/dns/records/myserver.local"
 ```
 
 ### Other Existing API Endpoints
