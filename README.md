@@ -13,7 +13,7 @@ This fork extends the original blocky DNS server with:
 
 ## Quick Start on Linux
 
-### 1. Build from Source
+### 1. Build from source
 
 ```bash
 # Install Go (if not present)
@@ -24,7 +24,7 @@ git clone https://github.com/dmitryporotnikov/blocky-with-api.git
 cd blocky-with-api
 
 # Build
-go build -o blocky ./cmd/blocky
+go build -o blocky
 
 # Make executable
 chmod +x blocky
@@ -33,7 +33,7 @@ chmod +x blocky
 sudo mv blocky /usr/local/bin/
 ```
 
-### 2. Create a Configuration File
+### 2. Create a configuration File
 
 Create `/etc/blocky/config.yml`:
 
@@ -56,7 +56,7 @@ customDNS:
 logLevel: info
 ```
 
-### 3. Create the Dynamic Records File
+### 3. Create the dynamic records file
 
 Create `/etc/blocky/records.yaml` (can be empty initially):
 
@@ -74,7 +74,7 @@ sudo blocky serve -c /etc/blocky/config.yml
 sudo nohup blocky serve -c /etc/blocky/config.yml > /var/log/blocky.log 2>&1 &
 ```
 
-### 5. Verify It's Working
+### 5. Verify it's working
 
 ```bash
 # Check DNS resolution
