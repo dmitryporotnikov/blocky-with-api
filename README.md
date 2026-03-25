@@ -45,6 +45,10 @@ ports:
   dns: 53               # DNS port (UDP/TCP)
   http: 4000            # REST API port
 
+# REST API authentication (optional but recommended)
+api:
+  apiKey: "your-secret-api-key-here"
+
 upstreams:
   groups:
     # these external DNS resolvers will be used. Blocky picks 2 random resolvers from the list for each query
@@ -96,8 +100,8 @@ sudo nohup blocky serve -c /etc/blocky/config.yml > /var/log/blocky.log 2>&1 &
 # Check DNS resolution
 dig @127.0.0.1 google.com
 
-# Check API is responding
-curl http://127.0.0.1:4000/api/blocking/status
+# Check API is responding (with API key)
+curl http://127.0.0.1:4000/api/blocking/status -H "X-API-Key: your-secret-api-key-here"
 ```
 
 ---
@@ -105,6 +109,20 @@ curl http://127.0.0.1:4000/api/blocking/status
 ## REST API - Dynamic DNS Record Management
 
 The fork adds endpoints to dynamically manage DNS records at runtime.
+
+### Authentication
+
+The REST API supports API key authentication. When `api.apiKey` is configured in `config.yml`, all `/api/*` endpoints require authentication.
+
+Pass the API key using one of these methods:
+
+```bash
+# Using X-API-Key header (recommended)
+curl -H "X-API-Key: your-secret-api-key-here" http://localhost:4000/api/blocking/status
+
+# Using Authorization header with Bearer scheme
+curl -H "Authorization: Bearer your-secret-api-key-here" http://localhost:4000/api/blocking/status
+```
 
 ### Base URL
 ```
@@ -115,7 +133,7 @@ http://localhost:4000/api
 
 #### List All DNS Records
 ```bash
-curl http://localhost:4000/api/dns/records
+curl http://localhost:4000/api/dns/records -H "X-API-Key: your-secret-api-key-here"
 ```
 
 Response:
@@ -131,6 +149,7 @@ Response:
 ```bash
 curl -X POST http://localhost:4000/api/dns/records \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-secret-api-key-here" \
   -d '{"domain":"myserver.local","type":"A","value":"192.168.1.100","ttl":3600}'
 ```
 
@@ -140,12 +159,14 @@ Supported record types: `A`, `AAAA`, `TXT`, `CNAME`, `SRV`, `PTR`
 ```bash
 curl -X PUT "http://localhost:4000/api/dns/records/myserver.local" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-secret-api-key-here" \
   -d '{"type":"A","value":"192.168.1.200","ttl":7200}'
 ```
 
 #### Delete All Records for a Domain
 ```bash
-curl -X DELETE "http://localhost:4000/api/dns/records/myserver.local"
+curl -X DELETE "http://localhost:4000/api/dns/records/myserver.local" \
+  -H "X-API-Key: your-secret-api-key-here"
 ```
 
 ### Other Existing API Endpoints
@@ -162,6 +183,19 @@ curl -X DELETE "http://localhost:4000/api/dns/records/myserver.local"
 ---
 
 ## Configuration Reference
+
+### REST API Authentication
+
+```yaml
+api:
+  apiKey: "your-secret-api-key-here"  # Required for API authentication
+```
+
+When `apiKey` is set, all `/api/*` endpoints require authentication via:
+- `X-API-Key` header (recommended)
+- `Authorization: Bearer <key>` header
+
+When `apiKey` is not set or empty, the API is accessible without authentication (not recommended for production).
 
 ### Custom DNS with Dynamic File
 

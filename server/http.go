@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/0xERR0R/blocky/config"
@@ -90,7 +91,7 @@ func newCORSMiddleware() httpMiddleware {
 
 	options := cors.Options{
 		AllowCredentials: true,
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-API-Key"},
 		AllowedMethods:   []string{"GET", "POST"},
 		AllowedOrigins:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
@@ -98,4 +99,34 @@ func newCORSMiddleware() httpMiddleware {
 	}
 
 	return cors.New(options).Handler
+}
+
+// APIKeyAuthMiddleware returns a middleware that authenticates requests using API key
+func APIKeyAuthMiddleware(apiKey string) httpMiddleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip auth for non-API paths (metrics, DoH, docs, etc.)
+			if !strings.HasPrefix(r.URL.Path, "/api") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Check for API key in X-API-Key header or Authorization header
+			key := r.Header.Get("X-API-Key")
+			if key == "" {
+				// Also check Authorization header with Bearer scheme
+				auth := r.Header.Get("Authorization")
+				if strings.HasPrefix(auth, "Bearer ") {
+					key = strings.TrimPrefix(auth, "Bearer ")
+				}
+			}
+
+			if key != apiKey {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

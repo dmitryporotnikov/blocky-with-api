@@ -276,6 +276,7 @@ type Config struct {
 	SUDN             SUDN                `yaml:"specialUseDomains"`
 	DNS64            DNS64               `yaml:"dns64"`
 	DNSSEC           DNSSEC              `yaml:"dnssec"`
+	API              API                 `yaml:"api"`
 
 	// Deprecated options
 	Deprecated struct {
@@ -308,6 +309,25 @@ func (c *Ports) LogConfig(logger *logrus.Entry) {
 	logger.Infof("TLS   = %s", c.TLS)
 	logger.Infof("HTTP  = %s", c.HTTP)
 	logger.Infof("HTTPS = %s", c.HTTPS)
+}
+
+// API contains configuration for the REST API
+type API struct {
+	APIKey string `yaml:"apiKey"`
+}
+
+// IsEnabled returns true when API key is configured
+func (c *API) IsEnabled() bool {
+	return c.APIKey != ""
+}
+
+// LogConfig implements `config.Configurable`.
+func (c *API) LogConfig(logger *logrus.Entry) {
+	if c.APIKey != "" {
+		logger.Infof("API key: %s", secretObfuscator)
+	} else {
+		logger.Info("API key: not configured")
+	}
 }
 
 // split in two types to avoid infinite recursion. See `BootstrapDNS.UnmarshalYAML`.

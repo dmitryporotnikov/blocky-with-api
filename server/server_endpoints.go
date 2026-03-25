@@ -189,6 +189,11 @@ func (s *Server) Query(
 func createHTTPRouter(cfg *config.Config, openAPIImpl api.StrictServerInterface) *chi.Mux {
 	router := chi.NewRouter()
 
+	// Apply API key authentication middleware if configured
+	if cfg.API.IsEnabled() {
+		router.Use(APIKeyAuthMiddleware(cfg.API.APIKey))
+	}
+
 	api.RegisterOpenAPIEndpoints(router, openAPIImpl)
 
 	configureDebugHandler(router)
