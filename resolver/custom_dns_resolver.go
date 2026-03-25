@@ -343,6 +343,9 @@ func (r *CustomDNSResolver) AddDNSRecord(domain string, recType string, value st
 	defer r.mu.Unlock()
 
 	domain = util.ExtractDomainOnly(domain)
+	if domain == "" {
+		return fmt.Errorf("domain cannot be empty")
+	}
 	if ttl == 0 {
 		ttl = r.cfg.CustomTTL.SecondsU32()
 	}
