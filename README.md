@@ -1,13 +1,11 @@
 # Blocky DNS Server (Fork)
 
-> **This is a fork of [0xERR0R/blocky](https://github.com/0xERR0R/blocky)** with additional REST API support for dynamic DNS record management.
+This is a fork of [0xERR0R/blocky](https://github.com/0xERR0R/blocky) that adds REST API support for managing DNS records at runtime.
 
-## Fork Features
+### What this fork adds
 
-This fork extends the original blocky DNS server with:
-
-- **Dynamic DNS Record Management via REST API** - Create, update, delete DNS records at runtime without restarting the server
-- **File-based Persistence** - Dynamic records are saved to a YAML file and persist across restarts
+- REST API for creating, updating, and deleting DNS records without restarting the server
+- File-based persistence — dynamic records are stored in a YAML file and survive restarts
 
 ---
 
